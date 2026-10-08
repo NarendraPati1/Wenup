@@ -96,6 +96,7 @@ Next Question / Response
 This keeps the LLM responsible for **understanding language**, while the application remains responsible for **deciding what becomes part of the state**.
 
 #### For some fields and actions, the required information can be handled directly by normal application logic. I added deterministic paths/options for these cases so the system does not call the model unnecessarily.
+
 ### 4. Structured state
 
 The application maintains a structured state instead of relying only on conversation history.
@@ -161,7 +162,7 @@ Draft Document
 
 The **Facts Ledger is the source of truth for the document**, while semantic memory helps the system understand the conversation around that state.
 
-### 7. Handling real user input
+### 6. Handling real user input
 
 The system is designed so users do not need to behave like a form.
 
@@ -175,7 +176,7 @@ It can handle:
 - Different address formats
 - Unexpected or messy input
 
-### 8. Guardrails
+### 7. Guardrails
 
 The assistant is kept within its intended role.
 
@@ -192,7 +193,7 @@ The system also avoids exposing internal implementation details such as:
 - Model details
 - Other sensitive implementation information
 
-### 9. Observability
+### 8. Observability
 
 I integrated **Langfuse** to understand what is happening during execution.
 
