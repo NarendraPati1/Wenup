@@ -199,12 +199,12 @@ The system also avoids exposing internal implementation details such as:
 <table>
   <tr>
     <td align="center">
-      <img src="img/guardrail1.jpeg" width="400">
+      <img src="img/guardrail1.jpeg" width="700">
       <br>
       <strong>Before Guardrails</strong>
     </td>
     <td align="center">
-      <img src="img/guardrail2.jpeg" width="400">
+      <img src="img/guardrail2.jpeg" width="700">
       <br>
       <strong>After Guardrails</strong>
     </td>
