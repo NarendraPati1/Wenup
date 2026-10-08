@@ -4,6 +4,9 @@ We know what the system is supposed to do:
 
 > Build a small web application that conducts a conversational interview, maintains structured information collected during that conversation, and produces a draft document from the information supplied.
 
+![Document Intake Assistant](img/app.jpeg)
+
+
 **The system does exactly that. Let me show you how.**
 ---
 
@@ -209,8 +212,36 @@ It is used to inspect things such as:
 ---
 
 # Architecture
-[System Architecture](image/architecture.jpeg)
 
+```text
+                    User
+                      │
+                      ▼
+              Conversational UI
+                      │
+                      ▼
+              LLM / Groq API
+                      │
+          Intent + extracted JSON
+                      │
+                      ▼
+          Deterministic validation
+                      │
+                      ▼
+              Structured state
+                      │
+             ┌────────┴────────┐
+             │                 │
+             ▼                 ▼
+      Semantic memory     Facts ledger
+             │                 │
+             └────────┬────────┘
+                      ▼
+             Response generation
+                      │
+                      ▼
+                    User
+```
 
 The key design decision is simple:
 
