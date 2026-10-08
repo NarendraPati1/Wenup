@@ -196,10 +196,11 @@ The system also avoids exposing internal implementation details such as:
 - Model details
 - Other sensitive implementation information
 
-![Before Guardrails](img/guardrail1.jpeg) ![After Guardrails](img/guardrail2.jpeg)
-             Before                                       After
-
-
+![Before Guardrails](img/guardrail1.jpeg)
+             Before                      
+             
+ ![After Guardrails](img/guardrail2.jpeg)
+             After
 
 ### 8. Observability
 
@@ -213,7 +214,7 @@ It is used to inspect things such as:
 - Token usage
 - Sessions
 - Model behaviour
-
+  ![Langfuse](img/langfuse.jpeg)
 ---
 
 # Architecture
