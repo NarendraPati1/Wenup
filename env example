@@ -1,0 +1,17 @@
+# ============================================================
+# .env-example
+# Copy this file to .env and replace the placeholder values.
+# ============================================================
+
+# Groq API Keys
+GROQ_API_KEY="your-groq-api-key-here"
+GROQ_API_KEY_2="your-groq-api-key-2-here"
+
+# Groq Model Configuration
+GROQ_MODEL="openai/gpt-oss-120b"
+GROQ_FALLBACK_MODELS="openai/gpt-oss-20b"
+
+# Langfuse
+LANGFUSE_SECRET_KEY="your-langfuse-secret-key-here"
+LANGFUSE_PUBLIC_KEY="your-langfuse-public-key-here"
+LANGFUSE_BASE_URL="https://us.cloud.langfuse.com"

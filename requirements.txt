@@ -1,0 +1,7 @@
+groq
+pydantic>=2
+python-dotenv
+langfuse
+pytest
+fastapi
+uvicorn
