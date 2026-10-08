@@ -196,11 +196,20 @@ The system also avoids exposing internal implementation details such as:
 - Model details
 - Other sensitive implementation information
 
-![Before Guardrails](img/guardrail1.jpeg)
-             Before                      
-             
- ![After Guardrails](img/guardrail2.jpeg)
-             After
+<table>
+  <tr>
+    <td align="center">
+      <img src="img/guardrail1.jpeg" width="400">
+      <br>
+      <strong>Before Guardrails</strong>
+    </td>
+    <td align="center">
+      <img src="img/guardrail2.jpeg" width="400">
+      <br>
+      <strong>After Guardrails</strong>
+    </td>
+  </tr>
+</table>
 
 ### 8. Observability
 
