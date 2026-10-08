@@ -209,36 +209,8 @@ It is used to inspect things such as:
 ---
 
 # Architecture
+[System Architecture](image/architecture.jpeg)
 
-```text
-                    User
-                      │
-                      ▼
-              Conversational UI
-                      │
-                      ▼
-              LLM / Groq API
-                      │
-          Intent + extracted JSON
-                      │
-                      ▼
-          Deterministic validation
-                      │
-                      ▼
-              Structured state
-                      │
-             ┌────────┴────────┐
-             │                 │
-             ▼                 ▼
-      Semantic memory     Facts ledger
-             │                 │
-             └────────┬────────┘
-                      ▼
-             Response generation
-                      │
-                      ▼
-                    User
-```
 
 The key design decision is simple:
 
