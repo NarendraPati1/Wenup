@@ -7,7 +7,7 @@ We know what the system is supposed to do:
 ![Document Intake Assistant](img/app.jpeg)
 
 
-**The system does exactly that. Let me show you how.**
+The system does exactly that. Let me show you how.
 ---
 
 ## How the system was built and how it works
@@ -195,6 +195,11 @@ The system also avoids exposing internal implementation details such as:
 - Internal application structure
 - Model details
 - Other sensitive implementation information
+
+![Before Guardrails](img/guardrail1.jpeg)
+
+![After Guardrails](img/guardrail2.jpeg)
+
 
 ### 8. Observability
 
