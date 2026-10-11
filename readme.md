@@ -54,7 +54,7 @@ Each LLM call is responsible for understanding the latest user message and retur
 
 It handles:
 
-- User intent
+- User intent classification
 - Information extraction
 - Corrections
 - Deferrals
