@@ -1,6 +1,6 @@
 # Document Intake Assistant - Narendra Patil [Demo](https://wenup.vercel.app/)
 
-We know what the system is supposed to do:
+You know what the system is supposed to do:
 
 > Build a small web application that conducts a conversational interview, maintains structured information collected during that conversation, and produces a draft document from the information supplied.
 
