@@ -355,6 +355,9 @@ quit    Exit
 
 Cache static prompt instructions and repeated tokens to reduce latency and API cost.
 
+### Better Context Management
+
+User selection and compressor method to avoid putting irrelevant information in context.
 ### Auditing and decision traceability
 
 Add structured audit logs so important state changes can be understood later:
