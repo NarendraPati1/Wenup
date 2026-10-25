@@ -4,10 +4,33 @@ You know what the system is supposed to do:
 
 > Build a small web application that conducts a conversational interview, maintains structured information collected during that conversation, and produces a draft document from the information supplied.
 
+###The system does exactly that. Let me show you how.
 ![Document Intake Assistant](img/app.jpeg)
 
+## Contents
 
-The system does exactly that. Let me show you how.
+- [How the system was built and how it works](#how-the-system-was-built-and-how-it-works)
+  - [1. Model choice](#1-model-choice)
+  - [2. One LLM call does the understanding](#2-one-llm-call-does-the-understanding)
+  - [3. Deterministic validation](#3-deterministic-validation)
+  - [4. Structured state](#4-structured-state)
+  - [5. Semantic memory](#5-semantic-memory)
+  - [6. Handling real user input](#6-handling-real-user-input)
+  - [7. Guardrails](#7-guardrails)
+  - [8. Observability](#8-observability)
+- [Architecture](#architecture)
+- [Execution](#execution)
+  - [Prerequisites](#prerequisites)
+  - [Clone the repository](#1-clone-the-repository)
+  - [Set up the backend](#2-set-up-the-backend)
+  - [Set up the frontend](#3-set-up-the-frontend)
+  - [Run the application](#4-run-the-application)
+- [Production improvements](#production-improvements)
+
+
+
+
+
 ---
 
 ## How the system was built and how it works
@@ -16,7 +39,7 @@ The system does exactly that. Let me show you how.
 
 For the prototype, I used the **Groq API** with the **OpenAI OSS 120B model**.
 
-I chose this model because it provided free API access for the prototype and a decent token usage limit. The main constraint was a rate limit of **5 requests per minute**. Still added fallback API key and model (oss-20B).
+I chose this model because it provided free API access for the prototype and a decent token usage limit. The main constraint was a rate limit of **5 requests per minute**. I also added a fallback API key and model (`oss-20B`).
 
 This created a design choice.
 
@@ -24,15 +47,15 @@ This created a design choice.
 
 ```text
 User message
-    ↓
+   ↓
 1 LLM call
-    ↓
+   ↓
 Understand intent + extract information + return JSON
-    ↓
+   ↓
 Deterministic validation
-    ↓
+   ↓
 Update state
-    ↓
+   ↓
 Response
 ```
 
@@ -40,9 +63,9 @@ Response
 
 ```text
 User message
-    ↓
+   ↓
 LLM call 1 → extract information
-    ↓
+   ↓
 LLM call 2 → generate response
 ```
 
@@ -82,23 +105,23 @@ The flow is:
 
 ```text
 User Message
-      ↓
-     LLM
-      ↓
+     ↓
+    LLM
+     ↓
 Intent + Extracted Information
-      ↓
-    JSON
-      ↓
+     ↓
+   JSON
+     ↓
 Deterministic Validation
-      ↓
-  State Update
-      ↓
+     ↓
+ State Update
+     ↓
 Next Question / Response
 ```
 
 This keeps the LLM responsible for **understanding language**, while the application remains responsible for **deciding what becomes part of the state**.
 
-#### For some fields and actions, the required information can be handled directly by normal application logic. I added deterministic paths/options for these cases so the system does not call the model unnecessarily.
+For some fields and actions, the required information can be handled directly by normal application logic. I added deterministic paths/options for these cases so the system does not call the model unnecessarily.
 
 ### 4. Structured state
 
@@ -125,45 +148,33 @@ This allows the application to know:
 - What is still missing
 - What should be asked next
 
-### 5. Semantic memory and facts ledger
+### 5. Semantic memory
 
-Both are needed because they solve **different problems**.
+The application uses semantic memory to retain relevant facts and context from the conversation.
 
-**Facts Ledger = What is officially going into the document.**
+It helps the system:
 
-- Structured, validated, and trusted.
-- Only contains fields that the document actually needs.
+- Remember information the user mentioned earlier
+- Avoid asking the same question again
+- Understand later replies using earlier context
+- Keep track of useful details while collecting information for the draft
 
-**Semantic Memory = What the system remembers to understand the conversation.**
-
-- Stores useful context that may not belong in the document.
-- Helps avoid asking the user the same thing again and supports later reasoning.
-
-#### Why keep them separate?
-
-If everything is put into the Facts Ledger, it becomes polluted with conversational information that is not document data.
-
-If only the Facts Ledger is used, the assistant loses useful context from earlier conversation.
-
-A simple way to think about it is:
+The structured state holds the fields used by the application, while semantic memory helps interpret the conversation and retrieve relevant facts when needed.
 
 ```text
 Conversation
      ↓
 Semantic Memory
-"What has the user mentioned before?"
+"Which relevant facts has the user mentioned?"
      ↓
 LLM understands the current message
      ↓
-Facts Ledger / Structured State
-"What facts are actually accepted for the document?"
-     ↓
 Deterministic validation
+     ↓
+Structured State
      ↓
 Draft Document
 ```
-
-The **Facts Ledger is the source of truth for the document**, while semantic memory helps the system understand the conversation around that state.
 
 ### 6. Handling real user input
 
@@ -223,39 +234,38 @@ It is used to inspect things such as:
 - Token usage
 - Sessions
 - Model behaviour
-  ![Langfuse](img/langfuse.jpeg)
+
+![Langfuse](img/langfuse.jpeg)
+
 ---
 
 # Architecture
 
 ```text
-                    User
-                      │
-                      ▼
-              Conversational UI
-                      │
-                      ▼
-              LLM / Groq API
-                      │
-          Intent + extracted JSON
-                      │
-                      ▼
-          Deterministic validation
-                      │
-                      ▼
-              Structured state
-                      │
-             ┌────────┴────────┐
-             │                 │
-             ▼                 ▼
-      Semantic memory     Facts ledger
-             │                 │
-             └────────┬────────┘
-                      ▼
-             Response generation
-                      │
-                      ▼
-                    User
+                   User
+                     │
+                     ▼
+             Conversational UI
+                     │
+                     ▼
+                Groq API / LLM
+                     │
+         Intent + extracted JSON
+                     │
+                     ▼
+         Deterministic validation
+                     │
+                     ▼
+             Structured state
+                     │
+                     ▼
+             Semantic memory
+                     │
+                     ▼
+            Response generation
+                     │
+                     ▼
+                   User
 ```
 
 The key design decision is simple:
@@ -342,12 +352,12 @@ python main.py
 Useful CLI commands:
 
 ```text
-/doc    Show the facts ledger
+/doc    Show the collected document information
 /state  Show raw state for debugging
 quit    Exit
 ```
 
-
+---
 
 # Production improvements
 
@@ -355,9 +365,10 @@ quit    Exit
 
 Cache static prompt instructions and repeated tokens to reduce latency and API cost.
 
-### Better Context Management
+### Better context management
 
-User selection and compressor method to avoid putting irrelevant information in context.
+Use user selection and a compression method to avoid putting irrelevant information into the context.
+
 ### Auditing and decision traceability
 
 Add structured audit logs so important state changes can be understood later:
