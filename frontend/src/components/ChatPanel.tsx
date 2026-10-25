@@ -5,7 +5,7 @@ import type { ChatMessage, ChoiceOption } from '../types';
 interface ChatPanelProps {
   messages: ChatMessage[];
   onSendMessage: (text: string) => void;
-  onSelectOption: (option: ChoiceOption) => void;
+  onSelectOption: (option: ChoiceOption, messageId: string) => void;
   isLoading?: boolean;
   sendBlocked?: boolean;
 }
@@ -84,7 +84,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ messages, onSendMessage, o
                         return (
                           <button
                             key={opt.label}
-                            onClick={() => onSelectOption(opt)}
+                            onClick={() => onSelectOption(opt, msg.id)}
                             disabled={sendDisabled}
                             className={`px-4 py-2 text-xs font-semibold rounded-xl transition-all shadow-xs ${
                               isPrimary

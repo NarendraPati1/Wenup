@@ -47,8 +47,8 @@ export const DetailsTracker: React.FC<DetailsTrackerProps> = ({ state }) => {
       id: 'gifts',
       label: 'Specific gifts',
       icon: Gift,
-      value: state.specific_gifts && state.specific_gifts.length > 0 ? `${state.specific_gifts.length} items` : (state.specific_gifts !== null ? 'None' : null),
-      isDone: state.specific_gifts !== null,
+      value: state.specific_gifts && state.specific_gifts.length > 0 ? `${state.specific_gifts.length} items` : (state.specific_gifts != null ? 'None' : null),
+      isDone: state.specific_gifts != null,
     },
     {
       id: 'wishes',
@@ -58,8 +58,8 @@ export const DetailsTracker: React.FC<DetailsTrackerProps> = ({ state }) => {
         ? (Array.isArray(state.additional_wishes)
             ? (state.additional_wishes.length > 0 ? `${state.additional_wishes.length} items` : 'None')
             : 'Recorded')
-        : (state.additional_wishes !== null ? 'None' : null),
-      isDone: state.additional_wishes !== null,
+        : (state.additional_wishes != null ? 'None' : null),
+      isDone: state.additional_wishes != null,
     },
   ];
 

@@ -69,7 +69,7 @@ function generateDocumentText(state: DocumentState): string {
     state.specific_gifts.forEach((gift, idx) => {
       lines.push(`   ${idx + 1}. ${gift}`);
     });
-  } else if (state.specific_gifts !== null) {
+  } else if (state.specific_gifts != null) {
     lines.push('   I make no specific bequests of personal property at this time;');
     lines.push('   all personal effects shall form part of my general residuary estate.');
   } else {
@@ -89,7 +89,7 @@ function generateDocumentText(state: DocumentState): string {
     } else {
       lines.push('   No additional special directives or restrictions were specified.');
     }
-  } else if (state.additional_wishes !== null) {
+  } else if (state.additional_wishes != null) {
     lines.push('   No additional special directives or restrictions were specified.');
   } else {
     lines.push('   [Additional wishes not yet confirmed]');
@@ -124,8 +124,8 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({ state, progres
     state.covers_worldwide_assets !== null &&
     state.has_children !== null &&
     state.executor.name &&
-    state.specific_gifts !== null &&
-    state.additional_wishes !== null
+    state.specific_gifts != null &&
+    state.additional_wishes != null
   );
 
   const showToast = (msg: string) => {
@@ -309,7 +309,7 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({ state, progres
         )}
 
         {/* Section 5: Specific Gifts & Additional Wishes */}
-        {(state.specific_gifts !== null || state.additional_wishes !== null) && (
+        {(state.specific_gifts != null || state.additional_wishes != null) && (
           <div className="mb-4">
             <h4 className="text-sm font-serif-title font-bold text-[#1e1b4b] mb-3">
               5. Gifts & Additional Wishes
@@ -320,7 +320,7 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({ state, progres
                 <span className="font-medium text-slate-900">
                   {state.specific_gifts && state.specific_gifts.length > 0
                     ? state.specific_gifts.join(', ')
-                    : state.specific_gifts !== null ? 'None specified' : 'Pending'}
+                    : state.specific_gifts != null ? 'None specified' : 'Pending'}
                 </span>
               </div>
               <div>
@@ -330,7 +330,7 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({ state, progres
                     ? (Array.isArray(state.additional_wishes)
                         ? (state.additional_wishes.length > 0 ? state.additional_wishes.join(', ') : 'None specified')
                         : state.additional_wishes)
-                    : (state.additional_wishes !== null ? 'None specified' : 'Pending')}
+                    : (state.additional_wishes != null ? 'None specified' : 'Pending')}
                 </span>
               </div>
             </div>
@@ -477,7 +477,7 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({ state, progres
                         <li key={idx}><strong>{item}</strong></li>
                       ))}
                     </ul>
-                  ) : state.specific_gifts !== null ? (
+                  ) : state.specific_gifts != null ? (
                     <p className="text-slate-700">
                       I make no specific bequests of personal chattels or financial gifts at this time; all personal effects shall fall into the general estate.
                     </p>
@@ -507,7 +507,7 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({ state, progres
                         <p className="text-slate-700">No additional special wishes or directives were recorded.</p>
                       );
                     })()
-                  ) : state.additional_wishes !== null ? (
+                  ) : state.additional_wishes != null ? (
                     <p className="text-slate-700">No additional special wishes or directives were recorded.</p>
                   ) : (
                     <p className="text-slate-400 italic">[Additional wishes pending confirmation.]</p>

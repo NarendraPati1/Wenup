@@ -4,7 +4,6 @@ You know what the system is supposed to do:
 
 > Build a small web application that conducts a conversational interview, maintains structured information collected during that conversation, and produces a draft document from the information supplied.
 
-###The system does exactly that. Let me show you how.
 ![Document Intake Assistant](img/app.jpeg)
 
 ## Contents
@@ -27,9 +26,7 @@ You know what the system is supposed to do:
   - [Run the application](#4-run-the-application)
 - [Production improvements](#production-improvements)
 
-
-
-
+The system does exactly that. Let me show you how.
 
 ---
 
@@ -224,16 +221,9 @@ The system also avoids exposing internal implementation details such as:
 
 ### 8. Observability
 
-I integrated **Langfuse** to understand what is happening during execution.
+I integrated **Langfuse** to trace each intake turn and inspect how the application behaves during execution.
 
-It is used to inspect things such as:
-
-- LLM calls
-- Failed calls
-- Latency
-- Token usage
-- Sessions
-- Model behaviour
+Together, these traces support debugging failed calls, investigating latency and token usage, understanding state changes, and monitoring contradiction detection.
 
 ![Langfuse](img/langfuse.jpeg)
 
@@ -287,14 +277,14 @@ The key design decision is simple:
 
 ```bash
 git clone <repo-url>
-cd Final
+cd wenup
 ```
 
 ## 2. Set up the backend
 
 ```bash
 pip install -r requirements.txt
-cp .env-example .env
+cp .env.example .env
 ```
 
 Add the required API key to `.env`:
@@ -308,7 +298,7 @@ For observability, add Langfuse credentials if required:
 ```env
 LANGFUSE_PUBLIC_KEY=...
 LANGFUSE_SECRET_KEY=...
-LANGFUSE_HOST=https://cloud.langfuse.com
+LANGFUSE_BASE_URL=https://us.cloud.langfuse.com
 ```
 
 ## 3. Set up the frontend
@@ -324,13 +314,13 @@ cd ..
 
 ### Web application
 
-Terminal 1:
+Terminal 1 (Backend):
 
 ```bash
-python server.py
+python app.py
 ```
 
-Terminal 2:
+Terminal 2 (Frontend):
 
 ```bash
 cd frontend
@@ -340,21 +330,7 @@ npm run dev
 Then open:
 
 ```text
-http://localhost:8000
-```
-
-### CLI
-
-```bash
-python main.py
-```
-
-Useful CLI commands:
-
-```text
-/doc    Show the collected document information
-/state  Show raw state for debugging
-quit    Exit
+http://localhost:5173
 ```
 
 ---
@@ -390,10 +366,6 @@ Improve handling of incomplete answers, corrections, several facts in one messag
 ### Stronger LLM harness
 
 Move more control into deterministic application code using structured outputs, explicit state transitions, validation, retries, timeouts, fixed rules for critical decisions, and regression testing.
-
-### Extended observability
-
-Observability is already in place. For production, I would extend it across LLM calls, state changes, failures, latency, and cost so regressions can be caught early.
 
 ### Learning layer
 

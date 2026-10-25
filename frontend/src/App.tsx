@@ -146,18 +146,34 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleSelectOption = async (option: ChoiceOption) => {
+  const handleSelectOption = async (option: ChoiceOption, messageId: string) => {
     const sessionId = state._meta?.session_id;
     if (!sessionId || sending.current) return;
     sending.current = true;
     setIsLoading(true);
     setError(null);
     const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    setMessages((previous) => [...previous, { id: Date.now().toString(), role: 'user', content: option.label, timestamp: now }]);
+
+    // 1. Add user bubble with the label they chose
+    const userMsg = { id: Date.now().toString(), role: 'user' as const, content: option.label, timestamp: now };
+    // 2. Remove buttons from the assistant message that had options
+    setMessages((previous) => [
+      ...previous.map((m) => m.id === messageId ? { ...m, options: [] } : m),
+      userMsg,
+    ]);
+
     try {
+      const history = [...messages, userMsg].map(({ role, content }) => ({ role, content }));
       const res = await fetch('/api/choice', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: sessionId, field: option.field, value: option.value }),
+        body: JSON.stringify({
+          session_id: sessionId,
+          field: option.field,
+          value: option.value,
+          label: option.label,
+          state: state,
+          messages: history,
+        }),
       });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || 'Unable to save that choice.');
       const data = await res.json();
