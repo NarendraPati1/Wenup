@@ -12,20 +12,23 @@ import json
 import re
 import uuid
 from typing import Optional
+
 from pydantic import ValidationError
 
 from .config import (
-    client_primary, client_fallback,
-    PRIMARY_MODEL, FALLBACK_MODEL,
+    client_primary,
+    client_fallback,
+    PRIMARY_MODEL,
+    FALLBACK_MODEL,
     MAX_MESSAGE_CHARS,
-    langfuse, LANGFUSE_ENABLED,
+    langfuse,
+    LANGFUSE_ENABLED,
 )
 from .models import DocumentIntakeState, IntakeTurn
 from .prompts import SYSTEM_PROMPT
 
 
-
-# ── 2. JSON Parser Helper ─────────────────────────────────────────────────────
+# ── 1. JSON Parser Helper ─────────────────────────────────────────────────────
 def extract_json_object(raw: str) -> dict:
     """
     In plain English:
@@ -36,11 +39,13 @@ def extract_json_object(raw: str) -> dict:
         raise ValueError("Model response was empty")
 
     text = raw.strip()
+    # Strip markdown code blocks if the model wrapped its output in them
     if text.startswith("```"):
         text = text.strip("`")
         if text.lower().startswith("json"):
             text = text[4:].lstrip()
 
+    # Find the curly braces { ... }
     match = re.search(r"\{.*\}", text, flags=re.DOTALL)
     if not match:
         raise ValueError(f"No JSON object found in model output: {text[:200]}")
@@ -48,7 +53,7 @@ def extract_json_object(raw: str) -> dict:
     return json.loads(match.group(0))
 
 
-# ── 3. Chat History Cleaner ───────────────────────────────────────────────────
+# ── 2. Chat History Cleaner ───────────────────────────────────────────────────
 def clean_history(raw, max_messages: int = 40) -> list:
     """
     In plain English:
@@ -68,7 +73,7 @@ def clean_history(raw, max_messages: int = 40) -> list:
     return cleaned
 
 
-# ── 4. State Sanitizer & Formatter ────────────────────────────────────────────
+# ── 3. State Sanitizer & Formatter ────────────────────────────────────────────
 def normalize_state(raw_state) -> DocumentIntakeState:
     """
     Converts incoming raw dictionary data from the browser into our verified
@@ -92,7 +97,7 @@ def state_for_response(state: DocumentIntakeState, session_id: str | None = None
     return payload
 
 
-# ── 5. Quick-Choice Suggestion Buttons ────────────────────────────────────────
+# ── 4. Quick-Choice Suggestion Buttons ────────────────────────────────────────
 def question_options_for_reply(state: DocumentIntakeState, reply: str) -> list:
     """
     In plain English:
@@ -122,7 +127,7 @@ def question_options_for_reply(state: DocumentIntakeState, reply: str) -> list:
     return []
 
 
-# ── 6. The Core LLM Turn (AI Interaction & Tracing) ───────────────────────────
+# ── 5. The Core LLM Turn (AI Interaction & Tracing) ───────────────────────────
 def intake_turn(
     user_message: str,
     chat_history: list,
@@ -137,6 +142,11 @@ def intake_turn(
     - Traces every step in Langfuse (tokens, latency, contradictions).
     - Returns (reply_text, updated_document_state).
     """
+    # Build the message stack for the AI:
+    # 1. System prompt (rules, instructions, persona)
+    # 2. What we already know (the current state JSON)
+    # 3. Conversation history so far
+    # 4. The new message the user just sent
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "system", "content": "Current captured state:\n" + current_state.model_dump_json()},
@@ -145,7 +155,6 @@ def intake_turn(
     ]
 
     root_span = None
-
     if LANGFUSE_ENABLED and langfuse:
         try:
             root_span = langfuse.start_observation(
@@ -185,8 +194,20 @@ def intake_turn(
             )
             content = completion.choices[0].message.content or ""
 
+            # Parse the same-turn JSON response from the LLM.
             turn = IntakeTurn.model_validate(extract_json_object(content))
-            contradiction_info = normalize_contradiction_payload(getattr(turn, "contradiction", None), turn.reply)
+            contradiction_raw = getattr(turn, "contradiction", None)
+            contradiction_info = None
+
+            if isinstance(contradiction_raw, dict) and bool(contradiction_raw.get("detected", False)):
+                contradiction_info = {
+                    "detected": True,
+                    "type": contradiction_raw.get("type") or "unknown",
+                    "reply_excerpt": turn.reply[:200],
+                    "details": contradiction_raw.get("details") or {},
+                    "reason": contradiction_raw.get("reason") or "Potential contradiction detected.",
+                }
+
             new_state = DocumentIntakeState(**turn.model_dump(exclude={"reply", "contradiction"}))
 
             if gen_span is not None:
