@@ -1,8 +1,6 @@
 """
 backend/config.py — Configuration, API Keys & Secret Setup
 
-In plain English:
-This file is the "settings control room" for our entire backend.
 It reads secret keys from the `.env` file, connects to the AI provider (Groq),
 and sets up the activity tracker (Langfuse).
 All other files simply import from here so we don't repeat settings everywhere.
