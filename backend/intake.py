@@ -24,35 +24,6 @@ from .models import DocumentIntakeState, IntakeTurn
 from .prompts import SYSTEM_PROMPT
 
 
-# ── 1. Legacy compatibility shim ─────────────────────────────────────────────
-def detect_contradiction_in_reply(reply: str, old_state: DocumentIntakeState, new_state: DocumentIntakeState) -> Optional[dict]:
-    """
-    Compatibility wrapper only.
-
-    Contradiction detection is now performed by the same LLM call that produces the updated state,
-    so we intentionally do NOT trigger a second model request here.
-    """
-    return None
-
-
-def normalize_contradiction_payload(raw: object, reply: str) -> Optional[dict]:
-    """
-    Converts the contradiction block from the model's same-turn JSON response into the internal format.
-    """
-    if not isinstance(raw, dict):
-        return None
-
-    if not bool(raw.get("detected", False)):
-        return None
-
-    return {
-        "detected": True,
-        "type": raw.get("type") or "unknown",
-        "reply_excerpt": reply[:200],
-        "details": raw.get("details") or {},
-        "reason": raw.get("reason") or "Potential contradiction detected.",
-    }
-
 
 # ── 2. JSON Parser Helper ─────────────────────────────────────────────────────
 def extract_json_object(raw: str) -> dict:
