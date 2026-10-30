@@ -11,7 +11,7 @@ This is where the magic happens!
 import json
 import re
 import uuid
-from typing import Optional, Tuple
+from typing import Optional
 from pydantic import ValidationError
 
 from .config import (
@@ -24,96 +24,33 @@ from .models import DocumentIntakeState, IntakeTurn
 from .prompts import SYSTEM_PROMPT
 
 
-# ── 1. Contradiction Detection Helper ─────────────────────────────────────────
+# ── 1. Legacy compatibility shim ─────────────────────────────────────────────
 def detect_contradiction_in_reply(reply: str, old_state: DocumentIntakeState, new_state: DocumentIntakeState) -> Optional[dict]:
     """
-    In plain English:
-    Did the user just contradict themselves?
-    For example:
-    - User said 'I have no children', but later says 'leave my jewelry to my daughter'.
-    - User gave one name for their executor, but later gives a completely different name.
-    
-    If the AI's reply indicates a contradiction, this function flags it so we can log it!
+    Compatibility wrapper only.
+
+    Contradiction detection is now performed by the same LLM call that produces the updated state,
+    so we intentionally do NOT trigger a second model request here.
     """
-    reply_lower = reply.lower()
-    
-    # Phrases the AI uses when it catches the user contradicting earlier info
-    contradiction_indicators = [
-        "i notice you mentioned",
-        "you mentioned having no children earlier",
-        "contradicts",
-        "conflict",
-        "you said",
-        "but you just mentioned",
-        "earlier you",
-        "previously you",
-        "please clarify",
-        "which information is correct",
-        "which is correct",
-    ]
-    
-    # Check if the AI used any of those warning phrases in its reply
-    has_contradiction_language = any(indicator in reply_lower for indicator in contradiction_indicators)
-    
-    if not has_contradiction_language:
-        return None  # No contradiction detected, everything looks good!
-    
-    # Now figure out WHICH topic was contradicted:
-    contradiction_type = "unknown"
-    details = {}
-    
-    # Case A: Children status contradiction
-    if old_state.has_children is False and ("son" in reply_lower or "daughter" in reply_lower or "child" in reply_lower):
-        contradiction_type = "children_status"
-        details = {
-            "old_value": "has_children=False",
-            "conflict": "mentioned_children_in_gifts_or_conversation",
-        }
-    elif old_state.has_children is True and ("no child" in reply_lower or "no dependent" in reply_lower):
-        contradiction_type = "children_status"
-        details = {
-            "old_value": "has_children=True",
-            "conflict": "later_denied_children",
-        }
-    
-    # Case B: Name contradiction
-    if old_state.full_name and new_state.full_name and old_state.full_name != new_state.full_name:
-        contradiction_type = "name_conflict"
-        details = {
-            "old_value": old_state.full_name,
-            "new_value": new_state.full_name,
-        }
-    
-    # Case C: Executor contradiction
-    if old_state.executor.name and new_state.executor.name and old_state.executor.name != new_state.executor.name:
-        contradiction_type = "executor_conflict"
-        details = {
-            "old_value": old_state.executor.name,
-            "new_value": new_state.executor.name,
-        }
-    
-    # Case D: Asset scope contradiction (switching between worldwide vs local only)
-    if old_state.covers_worldwide_assets is not None and new_state.covers_worldwide_assets is not None:
-        if old_state.covers_worldwide_assets != new_state.covers_worldwide_assets:
-            contradiction_type = "asset_scope"
-            details = {
-                "old_value": "worldwide" if old_state.covers_worldwide_assets else "local",
-                "new_value": "worldwide" if new_state.covers_worldwide_assets else "local",
-            }
-    
-    # Case E: Gifts contradiction (said "no gifts" earlier, but now mentioning gifts)
-    if old_state.specific_gifts == [] and "gift" in reply_lower:
-        contradiction_type = "gifts_conflict"
-        details = {
-            "old_value": "no_gifts",
-            "conflict": "mentioned_gifts_after_saying_none",
-        }
-    
+    return None
+
+
+def normalize_contradiction_payload(raw: object, reply: str) -> Optional[dict]:
+    """
+    Converts the contradiction block from the model's same-turn JSON response into the internal format.
+    """
+    if not isinstance(raw, dict):
+        return None
+
+    if not bool(raw.get("detected", False)):
+        return None
+
     return {
         "detected": True,
-        "type": contradiction_type,
+        "type": raw.get("type") or "unknown",
         "reply_excerpt": reply[:200],
-        "details": details,
+        "details": raw.get("details") or {},
+        "reason": raw.get("reason") or "Potential contradiction detected.",
     }
 
 
@@ -128,13 +65,11 @@ def extract_json_object(raw: str) -> dict:
         raise ValueError("Model response was empty")
 
     text = raw.strip()
-    # Strip markdown code blocks if the model wrapped its output in them
     if text.startswith("```"):
         text = text.strip("`")
         if text.lower().startswith("json"):
             text = text[4:].lstrip()
 
-    # Find the curly braces { ... }
     match = re.search(r"\{.*\}", text, flags=re.DOTALL)
     if not match:
         raise ValueError(f"No JSON object found in model output: {text[:200]}")
@@ -196,7 +131,6 @@ def question_options_for_reply(state: DocumentIntakeState, reply: str) -> list:
     """
     reply_lower = reply.lower()
 
-    # If asset coverage hasn't been set yet and the AI is asking about assets
     if state.covers_worldwide_assets is None:
         asset_kws = ["worldwide", "local asset", "cover asset", "assets you hold",
                      "jurisdiction", "which asset", "asset scope"]
@@ -206,7 +140,6 @@ def question_options_for_reply(state: DocumentIntakeState, reply: str) -> list:
                 {"label": "Only local assets", "field": "covers_worldwide_assets", "value": False},
             ]
 
-    # If children question hasn't been answered yet and the AI is asking about children
     if state.has_children is None:
         child_kws = ["children", "child", "kids", "have any child", "do you have child"]
         if any(kw in reply_lower for kw in child_kws):
@@ -233,11 +166,6 @@ def intake_turn(
     - Traces every step in Langfuse (tokens, latency, contradictions).
     - Returns (reply_text, updated_document_state).
     """
-    # Build the message stack for the AI:
-    # 1. System prompt (rules, instructions, persona)
-    # 2. What we already know (the current state JSON)
-    # 3. Conversation history so far
-    # 4. The new message the user just sent
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "system", "content": "Current captured state:\n" + current_state.model_dump_json()},
@@ -245,8 +173,6 @@ def intake_turn(
         {"role": "user", "content": user_message},
     ]
 
-    # ── Step A: Open a root trace in Langfuse ──────────────────────────────────
-    # This represents the entire user turn in Langfuse dashboard
     root_span = None
 
     if LANGFUSE_ENABLED and langfuse:
@@ -265,10 +191,8 @@ def intake_turn(
     result_reply = None
     result_state = current_state
 
-    # ── Step B: Call Groq AI (Primary first, then Fallback if needed) ──────────
     for groq_client, model in ((client_primary, PRIMARY_MODEL), (client_fallback, FALLBACK_MODEL)):
         gen_span = None
-        # Start a child 'generation' span in Langfuse to track this specific LLM call
         if root_span is not None:
             try:
                 gen_span = root_span.start_observation(
@@ -282,23 +206,18 @@ def intake_turn(
                 gen_span = None
 
         try:
-            # Send to Groq API
             completion = groq_client.chat.completions.create(
                 model=model,
                 messages=messages,
-                temperature=0.2,   # Lower temperature = more consistent and focused responses
+                temperature=0.2,
                 max_tokens=2048,
             )
             content = completion.choices[0].message.content or ""
-            
-            # Parse the model's JSON response and update the document state
+
             turn = IntakeTurn.model_validate(extract_json_object(content))
-            new_state = DocumentIntakeState(**turn.model_dump(exclude={"reply"}))
+            contradiction_info = normalize_contradiction_payload(getattr(turn, "contradiction", None), turn.reply)
+            new_state = DocumentIntakeState(**turn.model_dump(exclude={"reply", "contradiction"}))
 
-            # Check if any contradiction was detected
-            contradiction_info = detect_contradiction_in_reply(turn.reply, current_state, new_state)
-
-            # Close the child generation span in Langfuse with token usage
             if gen_span is not None:
                 try:
                     usage = completion.usage
@@ -316,7 +235,6 @@ def intake_turn(
                 except Exception as _lf_err:
                     print(f"[Langfuse] Failed to close generation span: {_lf_err}")
 
-            # If a contradiction was detected, record it as a Warning Event and a Score in Langfuse!
             if contradiction_info and root_span is not None:
                 try:
                     root_span.create_event(
@@ -324,6 +242,7 @@ def intake_turn(
                         metadata={
                             "contradiction_type": contradiction_info["type"],
                             "details": contradiction_info["details"],
+                            "reason": contradiction_info.get("reason"),
                             "reply_excerpt": contradiction_info["reply_excerpt"],
                             "old_state": {
                                 "has_children": current_state.has_children,
@@ -344,7 +263,6 @@ def intake_turn(
                         },
                         level="WARNING",
                     )
-                    # Log a numerical score (1.0 = contradiction) for dashboard analytics
                     root_span.score(
                         name="contradiction_detected",
                         value=1.0,
@@ -355,10 +273,9 @@ def intake_turn(
 
             result_reply = turn.reply
             result_state = new_state
-            break  # Call succeeded! Break out of the retry loop.
+            break
 
         except Exception as e:
-            # If the primary model failed, record error and try the fallback model next
             last_err = e
             if gen_span is not None:
                 try:
@@ -366,7 +283,6 @@ def intake_turn(
                 except Exception:
                     pass
 
-    # ── Step C: Close root span and flush pending traces to Langfuse ───────────
     if root_span is not None:
         try:
             if result_reply is not None:
@@ -383,7 +299,7 @@ def intake_turn(
         except Exception as _lf_err:
             print(f"[Langfuse] Failed to close root span: {_lf_err}")
         try:
-            langfuse.flush()  # Immediately push data to the Langfuse cloud
+            langfuse.flush()
         except Exception:
             pass
 
