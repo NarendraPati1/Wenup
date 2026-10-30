@@ -39,13 +39,11 @@ def extract_json_object(raw: str) -> dict:
         raise ValueError("Model response was empty")
 
     text = raw.strip()
-    # Strip markdown code blocks if the model wrapped its output in them
     if text.startswith("```"):
         text = text.strip("`")
         if text.lower().startswith("json"):
             text = text[4:].lstrip()
 
-    # Find the curly braces { ... }
     match = re.search(r"\{.*\}", text, flags=re.DOTALL)
     if not match:
         raise ValueError(f"No JSON object found in model output: {text[:200]}")
@@ -55,12 +53,6 @@ def extract_json_object(raw: str) -> dict:
 
 # ── 2. Chat History Cleaner ───────────────────────────────────────────────────
 def clean_history(raw, max_messages: int = 40) -> list:
-    """
-    In plain English:
-    Cleans up the list of past messages before feeding it to the AI.
-    Makes sure only legitimate 'user' and 'assistant' text messages are sent,
-    and keeps only the recent history so we don't blow past context limits.
-    """
     cleaned = []
     if not isinstance(raw, list):
         return cleaned
@@ -75,10 +67,6 @@ def clean_history(raw, max_messages: int = 40) -> list:
 
 # ── 3. State Sanitizer & Formatter ────────────────────────────────────────────
 def normalize_state(raw_state) -> DocumentIntakeState:
-    """
-    Converts incoming raw dictionary data from the browser into our verified
-    DocumentIntakeState model. If anything is broken or invalid, returns a fresh blank state.
-    """
     if not raw_state:
         return DocumentIntakeState()
     try:
@@ -88,10 +76,6 @@ def normalize_state(raw_state) -> DocumentIntakeState:
 
 
 def state_for_response(state: DocumentIntakeState, session_id: str | None = None) -> dict:
-    """
-    Turns our DocumentIntakeState into a Python dictionary and attaches the session_id
-    so the browser and backend stay on the same page.
-    """
     payload = state.model_dump()
     payload["_meta"] = {"session_id": session_id or str(uuid.uuid4())}
     return payload
@@ -99,12 +83,6 @@ def state_for_response(state: DocumentIntakeState, session_id: str | None = None
 
 # ── 4. Quick-Choice Suggestion Buttons ────────────────────────────────────────
 def question_options_for_reply(state: DocumentIntakeState, reply: str) -> list:
-    """
-    In plain English:
-    When the assistant asks a simple question (like 'Do you have children?' or 'Worldwide or local assets?'),
-    we can show clickable buttons directly on the UI (e.g. [Worldwide assets] / [Only local assets]).
-    This function checks what the AI asked and returns the appropriate buttons!
-    """
     reply_lower = reply.lower()
 
     if state.covers_worldwide_assets is None:
@@ -134,19 +112,6 @@ def intake_turn(
     current_state: DocumentIntakeState,
     session_id: str | None = None,
 ):
-    """
-    In plain English:
-    This is the main function that runs for EVERY message from the user.
-    - Sends prompt + history + current document data to Groq.
-    - If primary model has an issue, automatically falls back to secondary model.
-    - Traces every step in Langfuse (tokens, latency, contradictions).
-    - Returns (reply_text, updated_document_state).
-    """
-    # Build the message stack for the AI:
-    # 1. System prompt (rules, instructions, persona)
-    # 2. What we already know (the current state JSON)
-    # 3. Conversation history so far
-    # 4. The new message the user just sent
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "system", "content": "Current captured state:\n" + current_state.model_dump_json()},
@@ -194,7 +159,6 @@ def intake_turn(
             )
             content = completion.choices[0].message.content or ""
 
-            # Parse the same-turn JSON response from the LLM.
             turn = IntakeTurn.model_validate(extract_json_object(content))
             contradiction_raw = getattr(turn, "contradiction", None)
             contradiction_info = None
