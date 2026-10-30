@@ -1,7 +1,6 @@
 """
 backend/intake.py — Core AI Logic & Langfuse Tracing
 
-In plain English:
 This is where the magic happens!
 1. We package up the user's message, chat history, and current document state.
 2. We send it to Groq's high-speed AI to decide what to ask next and what information to update.
