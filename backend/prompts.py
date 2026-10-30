@@ -1,7 +1,6 @@
 """
 backend/prompts.py — The AI's Master Instruction Guide (System Prompt)
 
-In plain English:
 Think of this prompt as the job training handbook for our AI assistant.
 It tells the AI:
 1. Who it is: A polite, professional Document Intake Assistant.
