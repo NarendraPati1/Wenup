@@ -1,7 +1,6 @@
 """
 backend/routes.py — The Web API Endpoints (The Front Doors)
 
-In plain English:
 This file handles incoming web requests from the frontend browser:
 1. /api/initial — "Welcome! Let's start a fresh chat session."
 2. /api/chat    — "The user just sent a message; let the AI think and reply."
