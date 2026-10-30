@@ -1,7 +1,6 @@
 """
 app.py — The Main Engine / Launchpad for the Backend!
 
-In plain English:
 This file starts our web server. When the user types something in the chat box
 on their browser, their browser sends a message to this server, which then processes
 it and sends back a response.
