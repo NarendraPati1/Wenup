@@ -31,7 +31,6 @@ from .prompts import SYSTEM_PROMPT
 # ── 1. JSON Parser Helper ─────────────────────────────────────────────────────
 def extract_json_object(raw: str) -> dict:
     """
-    In plain English:
     The AI returns its answer formatted as JSON. Sometimes it wraps it in markdown backticks
     like ```json { ... } ```. This helper safely extracts the raw { ... } JSON dictionary.
     """
