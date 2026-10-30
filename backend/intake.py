@@ -29,9 +29,8 @@ from .prompts import SYSTEM_PROMPT
 # ── 1. JSON Parser Helper ─────────────────────────────────────────────────────
 def extract_json_object(raw: str) -> dict:
     """
-    In plain English:
-    The AI returns its answer formatted as JSON. Sometimes it wraps it in markdown backticks
-    like ```json { ... } ```. This helper safely extracts the raw { ... } JSON dictionary.
+    Extracts a valid JSON object from the LLM response, removing unnecessary Markdown formatting.
+
     """
     if not isinstance(raw, str) or not raw.strip():
         raise ValueError("Model response was empty")
@@ -54,10 +53,9 @@ def extract_json_object(raw: str) -> dict:
 # ── 2. Chat History Cleaner ───────────────────────────────────────────────────
 def clean_history(raw, max_messages: int = 40) -> list:
     """
-    In plain English:
-    Cleans up the list of past messages before feeding it to the AI.
-    Makes sure only legitimate 'user' and 'assistant' text messages are sent,
-    and keeps only the recent history so we don't blow past context limits.
+    
+    Cleans conversation history by filtering invalid messages, keeping only recent messages, and limiting message length.
+    
     """
     cleaned = []
     if not isinstance(raw, list):
@@ -74,8 +72,8 @@ def clean_history(raw, max_messages: int = 40) -> list:
 # ── 3. State Sanitizer & Formatter ────────────────────────────────────────────
 def normalize_state(raw_state) -> DocumentIntakeState:
     """
-    Converts incoming raw dictionary data from the browser into our verified
-    DocumentIntakeState model. If anything is broken or invalid, returns a fresh blank state.
+    Validates incoming browser data against the schema and returns a blank state if validation fails.
+
     """
     if not raw_state:
         return DocumentIntakeState()
@@ -98,7 +96,7 @@ def state_for_response(state: DocumentIntakeState, session_id: str | None = None
 # ── 4. Quick-Choice Suggestion Buttons ────────────────────────────────────────
 def question_options_for_reply(state: DocumentIntakeState, reply: str) -> list:
     """
-    In plain English:
+
     When the assistant asks a simple question (like 'Do you have children?' or 'Worldwide or local assets?'),
     we can show clickable buttons directly on the UI (e.g. [Worldwide assets] / [Only local assets]).
     This function checks what the AI asked and returns the appropriate buttons!
