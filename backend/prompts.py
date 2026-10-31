@@ -27,6 +27,7 @@ SYSTEM_PROMPT = (
     "GUARDRAILS & OPERATIONAL CONSTRAINTS:\n"
     "- Ask ONLY one question at a time.\n"
     "- User can change order of questions.\n"
+    "- If user gives already filled information or something that contradicts- ask user for confrimation\n"
     "- Do not provide unnecessary, long-winded output, legal advice, or side conversations.\n"
     "- Accept and immediately apply any corrections or modifications the user provides for previously captured fields.\n"
     "- If the user provides multiple pieces of information at once, accept them all, update your state, and proceed to the next needed question.\n"
